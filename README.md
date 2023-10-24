@@ -24,9 +24,11 @@ using blender to augment 3d model textures
 
 ### Install via script
 
+see `./install.sh`
+
 ## Dataset Setup
 
-this code assumes that you place all models in `datasets/models` and place textures in `datasets/textures` like so:
+place all models in `datasets/models` and place textures in `datasets/textures` like so:
 
 ```
 datasets
@@ -58,4 +60,22 @@ datasets
 
 ## Run
 
-`./run.sh <config>`
+`./run.sh`
+
+TODO:
+* `./run.sh <config>`
+
+## NOTES
+
+gpu rendering does not work (easily)
+* in the current state, a black image is created
+* blender provides lower level gpu support... see [docs](https://docs.blender.org/api/current/gpu.html)
+
+external libraries arediscouraged
+* blender uses its own python distro & environment
+* used sys.path.insert as a workaround
+* custom packages do not work with blender (TBD)
+
+argparse conflicts with blender commandline arguments
+* hydra also conflicts
+* might be better to nix the configurations or read statically from a config.yaml
