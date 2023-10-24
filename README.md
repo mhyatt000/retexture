@@ -28,7 +28,7 @@ see `./install.sh`
 
 ## Dataset Setup
 
-this code assumes that you place all models in `datasets/models` and place textures in `datasets/textures` like so:
+place all models in `datasets/models` and place textures in `datasets/textures` like so:
 
 ```
 datasets
