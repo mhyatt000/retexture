@@ -64,3 +64,9 @@ datasets
 
 TODO:
 * `./run.sh <config>`
+
+## NOTES
+
+* gpu rendering does not work (easily)
+    * in the current state, a black image is created
+    * blender provides lower level gpu support... see [docs](https://docs.blender.org/api/current/gpu.html)
