@@ -59,3 +59,6 @@ datasets
 ## Run
 
 `./run.sh <config>`
+
+TODO:
+* `./run.sh <config>`
