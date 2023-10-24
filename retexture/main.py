@@ -11,9 +11,11 @@ pkgs = [
 for pkg in pkgs:
     sys.path.insert(0, pkg)
 
+from contextlib import contextmanager
 import itertools
 import math
 from pprint import pprint
+from tqdm import tqdm
 
 import hydra
 
@@ -22,6 +24,22 @@ import bpy
 ROOT = osp.dirname(osp.dirname(__file__))
 CONFIGS = osp.join(ROOT, "configs")
 
+@contextmanager
+def silence(silent=True):
+    """ context to reduce blender messages """
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+
+    if silent:
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
+
+    try:
+        yield
+    finally:
+        if silent:
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr
 
 def load(filepath):
     """TODO add a docstring"""
@@ -185,19 +203,18 @@ def main():
     models, textures = load_data(cfg)
     pairs = itertools.product(models, textures)
 
-    for i, (model, texture) in enumerate(pairs):
-        print("i", i)
+    for (model, texture) in tqdm(pairs):
 
         outname = "_".join([basename(x) for x in (model, texture)]) 
-        outpath = osp.join(cfg.out_dir, outname)
+        outpath = osp.join(cfg.out_dir, basename(model), basename(texture), outname)
 
-        load(model)
-        uvUnwrap(texture)
-        render_all(cfg.nangles, outpath,  cfg.file_type)
+        with silence(cfg.silent):
+            load(model)
+            uvUnwrap(texture)
+            render_all(cfg.nangles, outpath,  cfg.file_type)
 
-
-        bpy.data.objects["SketchUp"].select_set(state=True)
-        bpy.ops.object.delete()
+            bpy.data.objects["SketchUp"].select_set(state=True)
+            bpy.ops.object.delete()
 
 
 if __name__ == "__main__":
