@@ -1,0 +1,11 @@
+configs:
+  parent_file_path: /Users/lukebaumel/Desktop/elephant2.dae
+  output_directory: /Users/lukebaumel/Desktop/automation1
+  image_texture_path: /Users/lukebaumel/Downloads/zebraTexture.jpg
+  texture_name: zebra
+  model_name: Elephant
+  num_angles: 12
+  file_type: .png
+  object_name: SketchUp
+  numOfModels: 1
+  num: 0

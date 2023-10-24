@@ -1,2 +1,1 @@
-
-blender -b -P main.py
+blender -b  -P $(dirname "$0")/retexture/util.py

@@ -1,4 +1,5 @@
 # large files ... textures and models#
+.DS_Store
 *.png
 *.jpg
 *.zip
