@@ -5,6 +5,8 @@
 .DS_Store
 *.png
 *.jpg
+*.JPG
+*.bmp
 *.zip
 *.dae
 

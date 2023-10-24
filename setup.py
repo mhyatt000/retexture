@@ -8,7 +8,7 @@ setup(
     author='Matt Hyatt',
     author_email='mhyatt@luc.edu',
     url='https://github.com/mhyatt000/retexture',
-    packages=find_packages(),
+    packages=['retexture'],
     install_requires=[
         'hydra-core',
     ],

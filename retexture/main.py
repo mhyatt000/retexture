@@ -10,7 +10,7 @@ pkgs = [
 ]
 for pkg in pkgs:
     sys.path.insert(0, pkg)
-print(sys.path)
+
 import itertools
 import math
 from pprint import pprint
