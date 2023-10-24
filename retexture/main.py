@@ -4,8 +4,13 @@ import os
 import os.path as osp
 import sys
 
-pkg = f"{osp.expanduser('~')}/.anaconda3/envs/retexture/lib/python3.11/site-packages"
-sys.path.insert(0, pkg)
+pkgs = [
+        f"{osp.expanduser('~')}/.anaconda3/envs/retexture/lib/python3.11/site-packages",
+        f"{osp.expanduser('~')}/miniconda3/envs/retexture/lib/python3.9/site-packages"
+]
+for pkg in pkgs:
+    sys.path.insert(0, pkg)
+print(sys.path)
 import itertools
 import math
 from pprint import pprint
