@@ -1,16 +1,14 @@
 # retexture
 using blender to augment 3d model textures
 
-![elephant1_peacockwing2_0.0.png](elephant1_peacockwing2_0.0.png)
-
 <table>
   <tr>
-    <td><img src="elephant1_peacockwing2_0.0.png" alt="Image 1" width="100"/></td>
-    <td><img src="elephant1_peacockwing2_0.0.png" alt="Image 1" width="100"/></td>
+    <td><img src="assets/elephant1_peacockwing2_0.0.png" alt="" width="300"/></td>
+    <td><img src="assets/elephant1_Dunstickin-1154251706_0_0.0.png" alt="" width="300"/></td>
   </tr>
   <tr>
-    <td><img src="elephant1_peacockwing2_0.0.png" alt="Image 1" width="100"/></td>
-    <td><img src="elephant1_peacockwing2_0.0.png" alt="Image 1" width="100"/></td>
+    <td><img src="assets/elephant1_Carpet_Berber_Multi_0.0.png" alt="" width="300"/></td>
+    <td><img src="assets/elephant1_tetrabod_0.0.png" alt="" width="300"/></td>
   </tr>
 </table>
 
