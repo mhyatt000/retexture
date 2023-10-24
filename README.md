@@ -79,3 +79,7 @@ external libraries arediscouraged
 argparse conflicts with blender commandline arguments
 * hydra also conflicts
 * might be better to nix the configurations or read statically from a config.yaml
+
+memory required increases with job runtime
+* maybe blender keeps a history of all operations?
+* consider splitting jobs into batches
