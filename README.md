@@ -24,6 +24,37 @@ using blender to augment 3d model textures
 
 ### Install via script
 
+## Dataset Setup
+
+this code assumes that you place all models in `datasets/models` and place textures in `datasets/textures` like so:
+
+```
+datasets
+├── models
+│   ├── bird1.dae
+│   ├── bird_duck.dae
+│   ├── bird_duck2.dae
+│   ├── bird_eagle.dae
+│   ├── bird_raven.dae
+│   ├── butterfly.dae
+│   ├── butterfly1.dae
+│   ...
+├── datasets/textures
+│   ├── _fish_bass
+│   │   ├── Sketchy_Lines_Wavy_45_A.jpg
+│   │   ├── __Chalk_1.jpg
+│   │   ├── __Sketchy_Scales_1.jpg
+│   │   ├── __Wavy_Lines_45deg_A_1.jpg
+│   │   ├── material_1.jpg
+│   │   ├── material_2.jpg
+│   │   ├── material_3.jpg
+│   │   └── material_5.jpg
+│   ├── bird_duck
+│   │   └── mallard_male1.jpg
+│   ├── bird_duck2
+│   │   └── Color_000.JPG
+│   ...
+```
 
 ## Run
 

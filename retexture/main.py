@@ -5,8 +5,8 @@ import os.path as osp
 import sys
 
 pkgs = [
-        f"{osp.expanduser('~')}/.anaconda3/envs/retexture/lib/python3.11/site-packages",
-        f"{osp.expanduser('~')}/miniconda3/envs/retexture/lib/python3.9/site-packages"
+    f"{osp.expanduser('~')}/.anaconda3/envs/retexture/lib/python3.11/site-packages",
+    f"{osp.expanduser('~')}/miniconda3/envs/retexture/lib/python3.9/site-packages",
 ]
 for pkg in pkgs:
     sys.path.insert(0, pkg)
@@ -15,24 +15,24 @@ from contextlib import contextmanager
 import itertools
 import math
 from pprint import pprint
-from tqdm import tqdm
-
-import hydra
-
+import json
 import bpy
+import hydra
+from tqdm import tqdm
 
 ROOT = osp.dirname(osp.dirname(__file__))
 CONFIGS = osp.join(ROOT, "configs")
 
+
 @contextmanager
 def silence(silent=True):
-    """ context to reduce blender messages """
+    """context to reduce blender messages"""
     original_stdout = sys.stdout
     original_stderr = sys.stderr
 
     if silent:
-        sys.stdout = open(os.devnull, 'w')
-        sys.stderr = open(os.devnull, 'w')
+        sys.stdout = open(os.devnull, "w")
+        sys.stderr = open(os.devnull, "w")
 
     try:
         yield
@@ -40,6 +40,7 @@ def silence(silent=True):
         if silent:
             sys.stdout = original_stdout
             sys.stderr = original_stderr
+
 
 def load(filepath):
     """TODO add a docstring"""
@@ -146,7 +147,7 @@ def center_camera_on_object():
 
 
 def set_object_rotation(rotation_euler):
-    bpy.data.objects['SketchUp'].rotation_euler = rotation_euler
+    bpy.data.objects["SketchUp"].rotation_euler = rotation_euler
 
 
 def render_image():
@@ -191,35 +192,38 @@ def basename(file):
 
 def _main():
     """invokes blender"""
-    os.system(f'blender -b --python {__file__}')
+    os.system(f"blender -b --python {__file__}")
 
 
 def main():
     """docstring"""
 
-    parser = argparse.ArgumentParser(description='Process some arguments.')
-    parser.add_argument('--config_name', type=str, default='', help='The name of the config file.')
-    args = parser.parse_args()
-
     hydra.initialize(version_base="1.2", config_path="../configs")
-    cfg = hydra.compose(config_name="base" if not args.config_name else args.config_name)
+    cfg = hydra.compose(config_name="base")
 
     models, textures = load_data(cfg)
     pairs = itertools.product(models, textures)
+    err = {}
 
     for (model, texture) in tqdm(pairs):
 
-        outname = "_".join([basename(x) for x in (model, texture)]) 
-        outpath = osp.join(cfg.out_dir, basename(model), basename(texture), outname)
+        outname = "_".join([basename(x) for x in (model, texture)])
+        parent = osp.join(cfg.out_dir, basename(model), basename(texture))
+        outpath = osp.join(parent, outname)
 
-        with silence(cfg.silent):
-            load(model)
-            uvUnwrap(texture)
-            render_all(cfg.nangles, outpath,  cfg.file_type)
+        if not osp.exists(parent) or len(os.listdir(parent)) != cfg.nangles:
+            try:
+                load(model)
+                uvUnwrap(texture)
+                render_all(cfg.nangles, outpath, cfg.file_type)
 
-            bpy.data.objects["SketchUp"].select_set(state=True)
-            bpy.ops.object.delete()
+                bpy.data.objects["SketchUp"].select_set(state=True)
+                bpy.ops.object.delete()
+            except Exception as ex:
+                err[parent] = str(ex)
 
+        with open(osp.join(cfg.out_dir,'err.json'),'w') as file:
+            json.dump(err, file)
 
 if __name__ == "__main__":
     main()
