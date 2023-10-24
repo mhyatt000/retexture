@@ -197,8 +197,12 @@ def _main():
 def main():
     """docstring"""
 
+    parser = argparse.ArgumentParser(description='Process some arguments.')
+    parser.add_argument('--config_name', type=str, default='', help='The name of the config file.')
+    args = parser.parse_args()
+
     hydra.initialize(version_base="1.2", config_path="../configs")
-    cfg = hydra.compose(config_name="base")
+    cfg = hydra.compose(config_name="base" if not args.config_name else args.config_name)
 
     models, textures = load_data(cfg)
     pairs = itertools.product(models, textures)
