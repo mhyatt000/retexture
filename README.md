@@ -83,3 +83,7 @@ argparse conflicts with blender commandline arguments
 memory required increases with job runtime
 * maybe blender keeps a history of all operations?
 * consider splitting jobs into batches
+
+## Problems
+
+- bounding box centering doesnt work
