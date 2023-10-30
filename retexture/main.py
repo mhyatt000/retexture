@@ -4,25 +4,15 @@ import os
 import os.path as osp
 import sys
 
-pkgs = [
-    f"{osp.expanduser('~')}/.anaconda3/envs/retexture/lib/python3.11/site-packages",
-    f"{osp.expanduser('~')}/miniconda3/envs/retexture/lib/python3.9/site-packages",
-]
-for pkg in pkgs:
-    sys.path.insert(0, pkg)
-
 from contextlib import contextmanager
 import itertools
 import math
 from pprint import pprint
 import json
 import bpy
-import hydra
-from tqdm import tqdm
 
 ROOT = osp.dirname(osp.dirname(__file__))
 CONFIGS = osp.join(ROOT, "configs")
-
 
 @contextmanager
 def silence(silent=True):
@@ -173,8 +163,8 @@ def render_all(nangles, outpath, file_type):
 
 def load_data(cfg):
     """loads file paths for models and textures"""
-    model_dir = osp.join(ROOT, cfg.data_dir, "models")
-    tex_dir = osp.join(ROOT, cfg.data_dir, "textures")
+    model_dir = osp.join(ROOT, cfg['data_dir'], "models")
+    tex_dir = osp.join(ROOT, cfg['data_dir'], "textures")
 
     get_full_paths = lambda p: [osp.join(p, c) for c in os.listdir(p)]
 
@@ -198,31 +188,32 @@ def _main():
 def main():
     """docstring"""
 
-    hydra.initialize(version_base="1.2", config_path="../configs")
-    cfg = hydra.compose(config_name="base")
+    config_path = osp.join(CONFIGS,"base.json")
+    with open(config_path,'r') as file:
+        cfg = json.load(file)
 
     models, textures = load_data(cfg)
     pairs = itertools.product(models, textures)
     err = {}
 
-    for (model, texture) in tqdm(pairs):
+    for (model, texture) in pairs:
 
         outname = "_".join([basename(x) for x in (model, texture)])
-        parent = osp.join(cfg.out_dir, basename(model), basename(texture))
+        parent = osp.join(cfg['out_dir'], basename(model), basename(texture))
         outpath = osp.join(parent, outname)
 
-        if not osp.exists(parent) or len(os.listdir(parent)) != cfg.nangles:
+        if not osp.exists(parent) or len(os.listdir(parent)) != cfg['nangles']:
             try:
                 load(model)
                 uvUnwrap(texture)
-                render_all(cfg.nangles, outpath, cfg.file_type)
+                render_all(cfg['nangles'], outpath, cfg['file_type'])
 
                 bpy.data.objects["SketchUp"].select_set(state=True)
                 bpy.ops.object.delete()
             except Exception as ex:
                 err[parent] = str(ex)
 
-        with open(osp.join(cfg.out_dir,'err.json'),'w') as file:
+        with open(osp.join(cfg['out_dir'],'err.json'),'w') as file:
             json.dump(err, file)
 
 if __name__ == "__main__":
