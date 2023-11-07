@@ -10,13 +10,18 @@ import math
 from pprint import pprint
 import json
 import bpy
+from mathutils import Vector
 
 ROOT = osp.dirname(osp.dirname(__file__))
 CONFIGS = osp.join(ROOT, "configs")
 
 @contextmanager
+
 def silence(silent=True):
-    """context to reduce blender messages"""
+    """
+    context to try to reduce blender messages
+    doesnt work rn
+    """
     original_stdout = sys.stdout
     original_stderr = sys.stderr
 
@@ -49,18 +54,23 @@ def ls_objs():
         active = bpy.context.active_object
         return False if not active else active.name == other.name
 
-    objs = {obj.name: isactive(obj) for obj in bpy.data.objects}
+    objs = {obj.name: (obj.type, isactive(obj)) for obj in bpy.data.objects}
     print(objs)
 
 
-def uvUnwrap(image_texture_path):
+def uvUnwrap(image_texture_path, outname):
     """TODO docstring"""
 
     # Select and join all mesh objects
     mesh_objects = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
     for obj in mesh_objects:  # cannot join 1st object to itself
         obj.select_set(state=True)
+
+    # Set the active object to the first in the list and rename it
+    # sometimes the mesh is not called sketch up if the model name has 
+    # a lesser alphabetic name
     bpy.context.view_layer.objects.active = mesh_objects[0]
+    bpy.context.view_layer.objects.active.name = outname
     bpy.ops.object.join()
 
     # Unwrap the object using smart UV unwrap
@@ -113,6 +123,57 @@ def uvUnwrap(image_texture_path):
     bpy.ops.uv.smart_project()
     bpy.ops.object.mode_set(mode="OBJECT")
 
+def center_mesh(outname):
+    """
+    gets a translation vector by finding the middle between min/max in xyz
+    then subtracts this vector to center the object
+    """
+
+    obj = bpy.data.objects[outname]
+
+    # remove its parents if there are any
+    obj.parent = None
+
+    if obj.type != 'MESH':
+        raise TypeError(f"The object must be of type 'MESH' but is {obj.type}")
+
+    mesh = obj.data
+    bpy.context.view_layer.update()
+
+    # Calculate the min and max coordinates for each axis
+    min_x = min_y = min_z = float('inf')
+    max_x = max_y = max_z = float('-inf')
+
+    # !!!
+    # you have to do this iteratively since bpy uses custom data structures
+    for vert in mesh.vertices:
+        min_x, min_y, min_z = min(min_x, vert.co.x), min(min_y, vert.co.y), min(min_z, vert.co.z)
+        max_x, max_y, max_z = max(max_x, vert.co.x), max(max_y, vert.co.y), max(max_z, vert.co.z)
+
+    # Calculate the midpoints
+    mid_x = (max_x + min_x) / 2
+    mid_y = (max_y + min_y) / 2
+    mid_z = (max_z + min_z) / 2
+
+    # Translate vertices so that the midpoints are at the origin
+    translation_vector = Vector((-mid_x, -mid_y, -mid_z))
+    for vert in mesh.vertices:
+        vert.co += translation_vector
+
+
+def convert_to_mesh(object_name):
+    # Retrieve the object
+    obj = bpy.data.objects[object_name]
+    
+    # Make sure we're in object mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+    
+    # Select the object
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    
+    # Convert the object to a mesh
+    bpy.ops.object.convert(target='MESH')
 
 def calculate_angle(i, num_angles):
     return i * (2 * math.pi / num_angles)
@@ -128,16 +189,8 @@ def set_camera_location_and_lens(location, lens):
     bpy.context.scene.camera.data.lens = lens
 
 
-def center_camera_on_object():
-    """
-    outputs look like centering on center of mass, move camera way far back to see if centering gets better or worse.
-    If better, center of mass issue is washed away
-    """
-    bpy.ops.view3d.camera_to_view_selected()
-
-
-def set_object_rotation(rotation_euler):
-    bpy.data.objects["SketchUp"].rotation_euler = rotation_euler
+def set_object_rotation(outname, rotation_euler):
+    bpy.data.objects[outname].rotation_euler = rotation_euler
 
 
 def render_image():
@@ -149,16 +202,103 @@ def save_rendered_image(outpath, degrees, file_type):
     bpy.data.images["Render Result"].save_render(filepath=outpath)
 
 
-def render_all(nangles, outpath, file_type):
+def apply_modifiers(obj):
+    """ sometimes you need to be in object mode to transform an object """
+
+    # Make sure we're in Object mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    # Apply all modifiers for the object
+    while obj.modifiers:
+        bpy.ops.object.modifier_apply(modifier=obj.modifiers[0].name)
+
+def set_origin2mass(obj):
+    
+    # Make sure we're in Object mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    # Select the object
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+
+    # Set the origin to the center of mass
+    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS')
+
+
+
+def point2origin():
+
+    camera = bpy.data.objects['Camera']
+    # Calculate the direction from the camera to the target
+    direction = Vector((0,0,0)) - camera.location
+    # Point the camera's '-Z' and use its 'Y' as up
+    rot_quat = direction.to_track_quat('-Z', 'Y')
+    # Convert the quaternion to euler angles
+    camera.rotation_euler = rot_quat.to_euler()
+
+
+# Create a visual marker for the origin
+def create_origin_marker(size=1, display_type='SOLID'):
+    """ HELPER
+        makes a sphere at origin of something
+    """
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=size, location=(0,0,0))
+    origin_marker = bpy.context.active_object
+    origin_marker.display_type = display_type
+    origin_marker.name = 'Origin Marker'
+    return origin_marker
+
+# Parent the marker to an object to represent its local origin
+def parent_marker_to_object(marker, obj):
+    """ HELPER
+        moves a temporary marker to become the child of obj
+    """
+    marker.parent = obj
+    marker.matrix_parent_inverse = obj.matrix_world.inverted()
+
+
+def normalize_object_scales(reference_dimension=None):
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.mode_set(mode='OBJECT')
+    
+    # Calculate the longest dimension of each object and optionally find the largest
+    longest_dimensions = {}
+    for obj in bpy.context.scene.objects:
+        if obj.type == 'MESH':
+            obj_dimensions = obj.dimensions
+            longest_dimensions[obj.name] = max(obj_dimensions)
+    
+    # If no reference is provided, use the largest object's longest dimension
+    if not reference_dimension:
+        reference_dimension = max(longest_dimensions.values())
+    
+    # Apply the scale factor to each object to normalize their longest dimension
+    for obj_name, longest_dimension in longest_dimensions.items():
+        obj = bpy.data.objects[obj_name]
+        scale_factor = reference_dimension / longest_dimension
+        obj.scale *= scale_factor
+
+
+def render_all(nangles, outname,  outpath, file_type):
     for i in range(nangles):
         radians = i * (2 * math.pi / nangles)
         degrees = i * (360 / nangles)
 
-        set_camera_location_and_lens(location=(-32, -32, 10), lens=15)
-        center_camera_on_object()
-        set_object_rotation(rotation_euler=(0, 0, radians))
+        # apply_modifiers( bpy.data.objects[outname])
+        set_object_rotation(outname, rotation_euler=(0, 0, radians))
+        # center_mesh(outname)
+
+        obj = bpy.data.objects[outname]
+        set_origin2mass(obj)
+        obj.location = (0, 0, 0)
+
+        set_camera_location_and_lens(location=(10,10,10), lens=15)
+        point2origin()
+
         render_image()
         save_rendered_image(outpath, degrees, file_type)
+
 
 
 def load_data(cfg):
@@ -169,20 +309,13 @@ def load_data(cfg):
     get_full_paths = lambda p: [osp.join(p, c) for c in os.listdir(p)]
 
     models = get_full_paths(model_dir)
-    # it is a nested directory rn
-    textures = [get_full_paths(x) for x in get_full_paths(tex_dir)]
-    textures = sum(textures, [])
+    textures = get_full_paths(tex_dir)
     return models, textures
 
 
 def basename(file):
     """return filename with no extensions"""
     return osp.basename(file).split(".")[0]
-
-
-def _main():
-    """invokes blender"""
-    os.system(f"blender -b --python {__file__}")
 
 
 def main():
@@ -203,15 +336,18 @@ def main():
         outpath = osp.join(parent, outname)
 
         if not osp.exists(parent) or len(os.listdir(parent)) != cfg['nangles']:
-            try:
-                load(model)
-                uvUnwrap(texture)
-                render_all(cfg['nangles'], outpath, cfg['file_type'])
 
-                bpy.data.objects["SketchUp"].select_set(state=True)
+            # try:
+                load(model)
+                uvUnwrap(texture, outname)
+                render_all(cfg['nangles'], outname, outpath, cfg['file_type'])
+
+            # except Exception as ex:
+                # err[parent] = str(ex)
+
+            # finally:
+                bpy.data.objects[outname].select_set(state=True)
                 bpy.ops.object.delete()
-            except Exception as ex:
-                err[parent] = str(ex)
 
         with open(osp.join(cfg['out_dir'],'err.json'),'w') as file:
             json.dump(err, file)
