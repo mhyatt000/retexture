@@ -1,6 +1,8 @@
 # config files... hydra tends to generate them
 *.yaml
 *.json
+*.gif
+*.mp4
 
 # large files ... textures and models#
 .DS_Store
