@@ -9,8 +9,10 @@ import itertools
 import math
 from pprint import pprint
 import json
+import bmesh
 import bpy
 from mathutils import Vector
+from bpy_extras.object_utils import world_to_camera_view
 
 ROOT = osp.dirname(osp.dirname(__file__))
 CONFIGS = osp.join(ROOT, "configs")
@@ -164,14 +166,14 @@ def center_mesh(outname):
 def convert_to_mesh(object_name):
     # Retrieve the object
     obj = bpy.data.objects[object_name]
-    
+
     # Make sure we're in object mode
     bpy.ops.object.mode_set(mode='OBJECT')
-    
+
     # Select the object
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
-    
+
     # Convert the object to a mesh
     bpy.ops.object.convert(target='MESH')
 
@@ -179,12 +181,21 @@ def calculate_angle(i, num_angles):
     return i * (2 * math.pi / num_angles)
 
 
+def delete_other_cameras():
+
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in bpy.data.objects:
+        if obj.type == 'CAMERA' and obj.name != "Camera":
+            obj.select_set(True)
+    bpy.ops.object.delete() 
+
 def set_camera_location_and_lens(location, lens):
     """
     Adjust the Z-coordinate as needed #4x the max value of the shape(?),
     height maybe 1.1x just as dimensions to try starting with.
-    Want prooption to be fixed by the size of the model. Length at the longest point ie xMax-xMin
+    Want prooption to be fixed by the size of the model. Length at the shortest point ie xMax-xMin
     """
+    delete_other_cameras()
     bpy.context.scene.camera.location = location
     bpy.context.scene.camera.data.lens = lens
 
@@ -194,6 +205,7 @@ def set_object_rotation(outname, rotation_euler):
 
 
 def render_image():
+    bpy.data.worlds['World'].node_tree.nodes['Background'].inputs[0].default_value = (1, 1, 1, 1)  # RGBA
     bpy.ops.render.render(write_still=True)
 
 
@@ -213,7 +225,7 @@ def apply_modifiers(obj):
         bpy.ops.object.modifier_apply(modifier=obj.modifiers[0].name)
 
 def set_origin2mass(obj):
-    
+
     # Make sure we're in Object mode
     bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -238,6 +250,46 @@ def point2origin():
     camera.rotation_euler = rot_quat.to_euler()
 
 
+def is_in_view(camera_obj, mesh_obj):
+    """ checks if mesh is within camera frame entirely """
+
+    scene = bpy.context.scene
+    cam_data = camera_obj.data
+    
+    # Get the transformation matrix from the world to the camera
+    mat_world_to_camera = camera_obj.matrix_world.inverted()
+    
+    # Check if mesh vertices are in the camera view
+    for vertex in mesh_obj.data.vertices:
+        # Transform the vertex to world space
+        world_vertex = mesh_obj.matrix_world @ vertex.co
+        # Use the utility function world_to_camera_view
+        camera_vertex = world_to_camera_view(scene, camera_obj, world_vertex)
+        # Check if the camera vertex is within the view frustum (0.0 to 1.0 means it is visible)
+        if not (0.0 <= camera_vertex.x <= 1.0 and 0.0 <= camera_vertex.y <= 1.0 and camera_vertex.z > 0):
+            return False
+
+    return True
+
+def fit2view(obj):
+    """ fits an object to the maximum camera view """
+
+    obj.scale = (1.0, 1.0, 1.0)
+    toosmall = is_in_view(bpy.data.objects['Camera'], obj)
+
+    if toosmall:
+        while toosmall:
+            obj.scale *= 1.1
+            toosmall = is_in_view(bpy.data.objects['Camera'], obj)
+            print(obj.scale)
+    else: # too large
+        while not toosmall:
+            obj.scale *= 0.9
+            toosmall = is_in_view(bpy.data.objects['Camera'], obj)
+            print(obj.scale)
+
+
+
 # Create a visual marker for the origin
 def create_origin_marker(size=1, display_type='SOLID'):
     """ HELPER
@@ -258,29 +310,21 @@ def parent_marker_to_object(marker, obj):
     marker.matrix_parent_inverse = obj.matrix_world.inverted()
 
 
-def normalize_object_scales(reference_dimension=None):
+def normalize_object_scales(obj):
     bpy.ops.object.select_all(action='DESELECT')
     bpy.ops.object.mode_set(mode='OBJECT')
-    
-    # Calculate the longest dimension of each object and optionally find the largest
-    longest_dimensions = {}
-    for obj in bpy.context.scene.objects:
-        if obj.type == 'MESH':
-            obj_dimensions = obj.dimensions
-            longest_dimensions[obj.name] = max(obj_dimensions)
-    
-    # If no reference is provided, use the largest object's longest dimension
-    if not reference_dimension:
-        reference_dimension = max(longest_dimensions.values())
-    
-    # Apply the scale factor to each object to normalize their longest dimension
-    for obj_name, longest_dimension in longest_dimensions.items():
-        obj = bpy.data.objects[obj_name]
-        scale_factor = reference_dimension / longest_dimension
-        obj.scale *= scale_factor
+
+    dims = obj.dimensions
+    ref_dims = [15,15,20] # maximum size in x,y,z
+    scales =  [r/d for r,d in zip(ref_dims,dims)]
+    print(scales)
+    obj.scale *= min(scales) # scale everything equally by minimum allowed
 
 
 def render_all(nangles, outname,  outpath, file_type):
+
+    obj = bpy.data.objects[outname]
+    normalize_object_scales(obj)
     for i in range(nangles):
         radians = i * (2 * math.pi / nangles)
         degrees = i * (360 / nangles)
@@ -289,10 +333,10 @@ def render_all(nangles, outname,  outpath, file_type):
         set_object_rotation(outname, rotation_euler=(0, 0, radians))
         # center_mesh(outname)
 
-        obj = bpy.data.objects[outname]
         set_origin2mass(obj)
         obj.location = (0, 0, 0)
 
+        # fit2view(obj)
         set_camera_location_and_lens(location=(10,10,10), lens=15)
         point2origin()
 
@@ -326,6 +370,7 @@ def main():
         cfg = json.load(file)
 
     models, textures = load_data(cfg)
+    models = [m for m in models if any([x in m for x in ['bird','bird7','fish5','wine9','xelephant']])]
     pairs = itertools.product(models, textures)
     err = {}
 

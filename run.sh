@@ -1,2 +1,3 @@
-blender -b -P $(dirname "$0")/retexture/main.py
-python $(dirname "$0")/retexture/walk_media.py
+rm -r outputs
+blender -b -P ~/cs/retexture/retexture/main.py
+python ~/cs/retexture/retexture/util/walk_media.py
