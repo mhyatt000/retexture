@@ -1,42 +1,43 @@
 """ Utils for blender """
 
+import argparse
+import itertools
+import json
+import math
 import os
 import os.path as osp
 import sys
-
 from contextlib import contextmanager
-import itertools
-import math
 from pprint import pprint
-import json
+
 import bmesh
 import bpy
-from mathutils import Vector
 from bpy_extras.object_utils import world_to_camera_view
+from mathutils import Vector
 
 ROOT = osp.dirname(osp.dirname(__file__))
 CONFIGS = osp.join(ROOT, "configs")
 
-@contextmanager
 
-def silence(silent=True):
-    """
-    context to try to reduce blender messages
-    doesnt work rn
-    """
-    original_stdout = sys.stdout
-    original_stderr = sys.stderr
+def get_args():
+    """Get arguments after '--'"""
 
-    if silent:
-        sys.stdout = open(os.devnull, "w")
-        sys.stderr = open(os.devnull, "w")
+    # Check if '--' is in the arguments, otherwise just parse the command line
+    if "--" in sys.argv:
+        args = sys.argv[sys.argv.index("--") + 1 :]
+    else:
+        args = sys.argv[1:]
 
-    try:
-        yield
-    finally:
-        if silent:
-            sys.stdout = original_stdout
-            sys.stderr = original_stderr
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_dir", help="Directory for data")
+    parser.add_argument("--out_dir", help="Output directory")
+    parser.add_argument("--nangles", type=int, help="Number of angles")
+    parser.add_argument("--file_type", help="Type of the rendered images")
+    parser.add_argument("--silent", action="store_true", help="Run in silent mode")
+
+    parser.add_argument("--model", help="Directory for data")
+    parser.add_argument("--texture", help="Directory for data")
+    return parser.parse_args(args)
 
 
 def load(filepath):
@@ -69,7 +70,7 @@ def uvUnwrap(image_texture_path, outname):
         obj.select_set(state=True)
 
     # Set the active object to the first in the list and rename it
-    # sometimes the mesh is not called sketch up if the model name has 
+    # sometimes the mesh is not called sketch up if the model name has
     # a lesser alphabetic name
     bpy.context.view_layer.objects.active = mesh_objects[0]
     bpy.context.view_layer.objects.active.name = outname
@@ -85,7 +86,9 @@ def uvUnwrap(image_texture_path, outname):
     for slot, mat in enumerate(obj.material_slots):
         if mat.material.node_tree.nodes.get("Principled BSDF") is not None:
             principled_bsdf = mat.material.node_tree.nodes.get("Principled BSDF")
-            diffuse_bsdf = mat.material.node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
+            diffuse_bsdf = mat.material.node_tree.nodes.new(
+                type="ShaderNodeBsdfDiffuse"
+            )
             mat.material.node_tree.nodes.remove(principled_bsdf)
             mat.material.node_tree.links.new(
                 diffuse_bsdf.outputs["BSDF"],
@@ -125,6 +128,7 @@ def uvUnwrap(image_texture_path, outname):
     bpy.ops.uv.smart_project()
     bpy.ops.object.mode_set(mode="OBJECT")
 
+
 def center_mesh(outname):
     """
     gets a translation vector by finding the middle between min/max in xyz
@@ -136,21 +140,29 @@ def center_mesh(outname):
     # remove its parents if there are any
     obj.parent = None
 
-    if obj.type != 'MESH':
+    if obj.type != "MESH":
         raise TypeError(f"The object must be of type 'MESH' but is {obj.type}")
 
     mesh = obj.data
     bpy.context.view_layer.update()
 
     # Calculate the min and max coordinates for each axis
-    min_x = min_y = min_z = float('inf')
-    max_x = max_y = max_z = float('-inf')
+    min_x = min_y = min_z = float("inf")
+    max_x = max_y = max_z = float("-inf")
 
     # !!!
     # you have to do this iteratively since bpy uses custom data structures
     for vert in mesh.vertices:
-        min_x, min_y, min_z = min(min_x, vert.co.x), min(min_y, vert.co.y), min(min_z, vert.co.z)
-        max_x, max_y, max_z = max(max_x, vert.co.x), max(max_y, vert.co.y), max(max_z, vert.co.z)
+        min_x, min_y, min_z = (
+            min(min_x, vert.co.x),
+            min(min_y, vert.co.y),
+            min(min_z, vert.co.z),
+        )
+        max_x, max_y, max_z = (
+            max(max_x, vert.co.x),
+            max(max_y, vert.co.y),
+            max(max_z, vert.co.z),
+        )
 
     # Calculate the midpoints
     mid_x = (max_x + min_x) / 2
@@ -168,26 +180,27 @@ def convert_to_mesh(object_name):
     obj = bpy.data.objects[object_name]
 
     # Make sure we're in object mode
-    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     # Select the object
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
 
     # Convert the object to a mesh
-    bpy.ops.object.convert(target='MESH')
+    bpy.ops.object.convert(target="MESH")
+
 
 def calculate_angle(i, num_angles):
     return i * (2 * math.pi / num_angles)
 
 
 def delete_other_cameras():
-
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
     for obj in bpy.data.objects:
-        if obj.type == 'CAMERA' and obj.name != "Camera":
+        if obj.type == "CAMERA" and obj.name != "Camera":
             obj.select_set(True)
-    bpy.ops.object.delete() 
+    bpy.ops.object.delete()
+
 
 def set_camera_location_and_lens(location, lens):
     """
@@ -205,7 +218,12 @@ def set_object_rotation(outname, rotation_euler):
 
 
 def render_image():
-    bpy.data.worlds['World'].node_tree.nodes['Background'].inputs[0].default_value = (1, 1, 1, 1)  # RGBA
+    bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = (
+        1,
+        1,
+        1,
+        1,
+    )  # RGBA
     bpy.ops.render.render(write_still=True)
 
 
@@ -215,50 +233,48 @@ def save_rendered_image(outpath, degrees, file_type):
 
 
 def apply_modifiers(obj):
-    """ sometimes you need to be in object mode to transform an object """
+    """sometimes you need to be in object mode to transform an object"""
 
     # Make sure we're in Object mode
-    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     # Apply all modifiers for the object
     while obj.modifiers:
         bpy.ops.object.modifier_apply(modifier=obj.modifiers[0].name)
 
-def set_origin2mass(obj):
 
+def set_origin2mass(obj):
     # Make sure we're in Object mode
-    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     # Select the object
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
 
     # Set the origin to the center of mass
-    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS')
-
+    bpy.ops.object.origin_set(type="ORIGIN_CENTER_OF_MASS")
 
 
 def point2origin():
-
-    camera = bpy.data.objects['Camera']
+    camera = bpy.data.objects["Camera"]
     # Calculate the direction from the camera to the target
-    direction = Vector((0,0,0)) - camera.location
+    direction = Vector((0, 0, 0)) - camera.location
     # Point the camera's '-Z' and use its 'Y' as up
-    rot_quat = direction.to_track_quat('-Z', 'Y')
+    rot_quat = direction.to_track_quat("-Z", "Y")
     # Convert the quaternion to euler angles
     camera.rotation_euler = rot_quat.to_euler()
 
 
 def is_in_view(camera_obj, mesh_obj):
-    """ checks if mesh is within camera frame entirely """
+    """checks if mesh is within camera frame entirely"""
 
     scene = bpy.context.scene
     cam_data = camera_obj.data
-    
+
     # Get the transformation matrix from the world to the camera
     mat_world_to_camera = camera_obj.matrix_world.inverted()
-    
+
     # Check if mesh vertices are in the camera view
     for vertex in mesh_obj.data.vertices:
         # Transform the vertex to world space
@@ -266,63 +282,67 @@ def is_in_view(camera_obj, mesh_obj):
         # Use the utility function world_to_camera_view
         camera_vertex = world_to_camera_view(scene, camera_obj, world_vertex)
         # Check if the camera vertex is within the view frustum (0.0 to 1.0 means it is visible)
-        if not (0.0 <= camera_vertex.x <= 1.0 and 0.0 <= camera_vertex.y <= 1.0 and camera_vertex.z > 0):
+        if not (
+            0.0 <= camera_vertex.x <= 1.0
+            and 0.0 <= camera_vertex.y <= 1.0
+            and camera_vertex.z > 0
+        ):
             return False
 
     return True
 
+
 def fit2view(obj):
-    """ fits an object to the maximum camera view """
+    """fits an object to the maximum camera view"""
 
     obj.scale = (1.0, 1.0, 1.0)
-    toosmall = is_in_view(bpy.data.objects['Camera'], obj)
+    toosmall = is_in_view(bpy.data.objects["Camera"], obj)
 
     if toosmall:
         while toosmall:
             obj.scale *= 1.1
-            toosmall = is_in_view(bpy.data.objects['Camera'], obj)
+            toosmall = is_in_view(bpy.data.objects["Camera"], obj)
             print(obj.scale)
-    else: # too large
+    else:  # too large
         while not toosmall:
             obj.scale *= 0.9
-            toosmall = is_in_view(bpy.data.objects['Camera'], obj)
+            toosmall = is_in_view(bpy.data.objects["Camera"], obj)
             print(obj.scale)
-
 
 
 # Create a visual marker for the origin
-def create_origin_marker(size=1, display_type='SOLID'):
-    """ HELPER
-        makes a sphere at origin of something
+def create_origin_marker(size=1, display_type="SOLID"):
+    """HELPER
+    makes a sphere at origin of something
     """
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=size, location=(0,0,0))
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=size, location=(0, 0, 0))
     origin_marker = bpy.context.active_object
     origin_marker.display_type = display_type
-    origin_marker.name = 'Origin Marker'
+    origin_marker.name = "Origin Marker"
     return origin_marker
+
 
 # Parent the marker to an object to represent its local origin
 def parent_marker_to_object(marker, obj):
-    """ HELPER
-        moves a temporary marker to become the child of obj
+    """HELPER
+    moves a temporary marker to become the child of obj
     """
     marker.parent = obj
     marker.matrix_parent_inverse = obj.matrix_world.inverted()
 
 
 def normalize_object_scales(obj):
-    bpy.ops.object.select_all(action='DESELECT')
-    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     dims = obj.dimensions
-    ref_dims = [15,15,20] # maximum size in x,y,z
-    scales =  [r/d for r,d in zip(ref_dims,dims)]
+    ref_dims = [15, 15, 20]  # maximum size in x,y,z
+    scales = [r / d for r, d in zip(ref_dims, dims)]
     print(scales)
-    obj.scale *= min(scales) # scale everything equally by minimum allowed
+    obj.scale *= min(scales)  # scale everything equally by minimum allowed
 
 
-def render_all(nangles, outname,  outpath, file_type):
-
+def render_all(nangles, outname, outpath, file_type):
     obj = bpy.data.objects[outname]
     normalize_object_scales(obj)
     for i in range(nangles):
@@ -337,18 +357,17 @@ def render_all(nangles, outname,  outpath, file_type):
         obj.location = (0, 0, 0)
 
         # fit2view(obj)
-        set_camera_location_and_lens(location=(10,10,10), lens=15)
+        set_camera_location_and_lens(location=(10, 10, 10), lens=15)
         point2origin()
 
         render_image()
         save_rendered_image(outpath, degrees, file_type)
 
 
-
-def load_data(cfg):
+def load_data(args):
     """loads file paths for models and textures"""
-    model_dir = osp.join(ROOT, cfg['data_dir'], "models")
-    tex_dir = osp.join(ROOT, cfg['data_dir'], "textures")
+    model_dir = osp.join(ROOT, args.data_dir, "models")
+    tex_dir = osp.join(ROOT, args.data_dir, "textures")
 
     get_full_paths = lambda p: [osp.join(p, c) for c in os.listdir(p)]
 
@@ -365,37 +384,23 @@ def basename(file):
 def main():
     """docstring"""
 
-    config_path = osp.join(CONFIGS,"base.json")
-    with open(config_path,'r') as file:
-        cfg = json.load(file)
+    args = get_args()
 
-    models, textures = load_data(cfg)
-    models = [m for m in models if any([x in m for x in ['bird','bird7','fish5','wine9','xelephant']])]
-    pairs = itertools.product(models, textures)
-    err = {}
+    outname = "_".join([basename(x) for x in (args.model, args.texture)])
+    parent = osp.join(args.out_dir, basename(args.model), basename(args.texture))
+    outpath = osp.join(parent, outname)
 
-    for (model, texture) in pairs:
+    if not osp.exists(parent) or len(os.listdir(parent)) != args.nangles:
+        load(args.model)
+        uvUnwrap(args.texture, outname)
+        render_all(args.nangles, outname, outpath, args.file_type)
 
-        outname = "_".join([basename(x) for x in (model, texture)])
-        parent = osp.join(cfg['out_dir'], basename(model), basename(texture))
-        outpath = osp.join(parent, outname)
+        bpy.data.objects[outname].select_set(state=True)
+        bpy.ops.object.delete()
 
-        if not osp.exists(parent) or len(os.listdir(parent)) != cfg['nangles']:
+    with open(osp.join(args.out_dir, "err.json"), "w") as file:
+        json.dump(err, file)
 
-            # try:
-                load(model)
-                uvUnwrap(texture, outname)
-                render_all(cfg['nangles'], outname, outpath, cfg['file_type'])
-
-            # except Exception as ex:
-                # err[parent] = str(ex)
-
-            # finally:
-                bpy.data.objects[outname].select_set(state=True)
-                bpy.ops.object.delete()
-
-        with open(osp.join(cfg['out_dir'],'err.json'),'w') as file:
-            json.dump(err, file)
 
 if __name__ == "__main__":
     main()
