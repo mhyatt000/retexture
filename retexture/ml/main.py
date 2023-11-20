@@ -53,6 +53,11 @@ def get_model(model_name):
 
     Args: model_name (str): Name of the model to retrieve. Options are "resnet", "vit", "swin", or "clip".
     Returns: torch.nn.Module: Pre-trained model.
+
+    TODO:
+    - when running CLIP provide class captions of the classes of interest
+    - also use shape biased ResNet (refer to paper: https://arxiv.org/pdf/1811.12231.pdf)
+        - last of 3 models... trained on imagenet and stylized imagenet
     """
 
     model_loaders = {
@@ -77,9 +82,7 @@ def get_model(model_name):
             "Unsupported model name. Please choose from 'resnet', 'vit', 'swin', or 'clip'."
         )
 
-
 # vector rank=1000 [ , , , , , ... , n=1000]
-
 
 class BlenderDS(Dataset):
     def __init__(self, root_dir, transform=None):
