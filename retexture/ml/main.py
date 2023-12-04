@@ -198,21 +198,23 @@ class Analyzer:
             return
 
         for k, v in self.tops.items():
-            # Count the frequency of each class in v
-            class_counts = Counter(v)
+            try:
+                # Count the frequency of each class in v
+                class_counts = Counter(v)
 
-            # Prepare data for the histogram
-            labels, values = zip(*class_counts.items())
+                # Prepare data for the histogram
+                labels, values = zip(*class_counts.items())
 
-            # Create horizontal bar plot
-            plt.figure(figsize=(10, 5))
-            plt.barh(labels, values, align="center")
-            plt.xlabel("Frequency")
-            plt.title(f"Histogram for {k}")
+                # Create horizontal bar plot
+                plt.figure(figsize=(10, 5))
+                plt.barh(labels, values, align="center")
+                plt.xlabel("Frequency")
+                plt.title(f"Histogram for {k}")
 
-            # Show the plot
-            plt.show()
-
+                # Show the plot
+                plt.show()
+            except:
+                pass
 
 def evaluate(model, dataloader):
     """Evaluate a model on a dataset and print logits to the command line.
@@ -240,9 +242,9 @@ def evaluate(model, dataloader):
             logits = model(images)
             A.remember(src=logits, tgt=labels)
 
-            # print("Logits:", logits)
-            # print(logits.shape)
-            # print("Label:", labels)
+            print("Logits:", logits)
+            print(logits.shape)
+            print("Label:", labels)
 
             i += 1
             if i == 2:
