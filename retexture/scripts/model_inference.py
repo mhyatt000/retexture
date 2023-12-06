@@ -147,6 +147,7 @@ class Analyzer:
             except:
                 pass
 
+
 def evaluate(model, dataloader):
     """Evaluate a model on a dataset and print logits to the command line.
 
@@ -188,17 +189,7 @@ def main():
     args = get_args()
     model = get_model(args.model_name)
 
-    transform = transforms.Compose(
-        [
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-
-    blender_dataset = RTD(root_dir=args.root_data, transform=transform)
-
+    blender_dataset = RTD(root_dir=args.root_data)
     batch_size = 64
     dataloader = DataLoader(blender_dataset, batch_size=batch_size, shuffle=True)
 
