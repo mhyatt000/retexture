@@ -28,8 +28,8 @@ datasets
 │   ├── butterfly1.dae
 │   ...
 ├── datasets/textures
-│   ├── bird1.dae
-│   ├── butterfly1.dae
+│   ├── bird1.jpg
+│   ├── butterfly1.png
 │   ...
 ```
 
