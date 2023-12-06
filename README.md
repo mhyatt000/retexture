@@ -35,31 +35,38 @@ datasets
 
 ## Config Setup
 
-see `configs/base_config.yaml`
+see `configs/base.yaml`
 
 ## Run
 
 `python -m retexture run`
 
-## NOTES
+## NOTES and Design Choices
 
-gpu rendering does not work (easily)
-* in the current state, a black image is created
-* blender provides lower level gpu support... see [docs](https://docs.blender.org/api/current/gpu.html)
+### Blender is incompatible with external python libraries
 
-external libraries arediscouraged
-* blender uses its own python distro & environment
-* used sys.path.insert as a workaround
-* custom packages do not work with blender (TBD)
+* Blender uses its own distribution of Python
+* does not allow changes to site packages (without weird hacks)
+    * ie: using `sys.path.append` as a workaround
 
-argparse conflicts with blender commandline arguments
-* hydra also conflicts
-* might be better to nix the configurations or read statically from a config.yaml
+### Argparse conflicts with blender commandline arguments
 
-memory required increases with job runtime
-* maybe blender keeps a history of all operations?
-* consider splitting jobs into batches
+Solution: 
+* `blender -b -P <script.py> -- <args>`
 
-## Problems
+### GPU rendering seems to cause problems
+* Yields a black image 
+    * could be due to external servers having limited GUI
+    * could be due to problems with the GPU and CUDA compatible libraries
+* Blender provides lower level gpu support... see [docs](https://docs.blender.org/api/current/gpu.html)
 
-- bounding box centering doesnt work
+### Memory required increases with job runtime
+* Blender keeps a history of all operations
+
+Solution: 
+* Render jobs are split into batches
+* Master script spins off Blender processes with the child script
+
+## Known Problems
+
+* Bounding box centering fails occasionally
