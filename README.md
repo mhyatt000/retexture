@@ -1,5 +1,5 @@
 # retexture
-using blender to augment 3d model textures
+ReTexture dataset toolkit for generation and analysis
 
 <img src="assets/teaser.png" alt="" width="100%"/>
 
