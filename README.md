@@ -15,7 +15,7 @@ using blender to augment 3d model textures
 
 ### Install Blender via script
 
-see `./install.sh`
+see [`retexture/scripts/setup/install_blender.sh`](retexture/scripts/setup/install_blender.sh)
 
 ## Dataset Setup
 
@@ -35,7 +35,7 @@ datasets
 
 ## Config Setup
 
-see `configs/base.yaml`
+see [`configs/base.yaml`](configs/base.yaml)
 
 ## Run
 
@@ -58,7 +58,7 @@ Solution:
 * Yields a black image 
     * could be due to external servers having limited GUI
     * could be due to problems with the GPU and CUDA compatible libraries
-* Blender provides lower level gpu support... see [docs](https://docs.blender.org/api/current/gpu.html)
+* Blender provides lower level gpu support... see [Blender Official Docs](https://docs.blender.org/api/current/gpu.html)
 
 ### Memory required increases with job runtime
 * Blender keeps a history of all operations
