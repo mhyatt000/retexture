@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,9 +10,7 @@ readme = "README.md"
 authors = [
     { name = "Matthew Hyatt", email = "mhyatt000@gmail.com" },
 ]
-license = {
-    file = "LICENSE",
-}
+license = { file="LICENSE" }
 keywords = ["keyword1", "keyword2"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -20,18 +18,16 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 requires-python = ">=3.8"
-scripts = {
-    "run" = "retexture.master.main",
-}
+
+dependencies = [
+    "tqdm >=4.74.0",
+    "numpy >=1.23.5",
+    "hydra-core <1.2"
+]
 
 
 [project.urls]
 Homepage = "https://github.com/mhyatt000/retexture"
-
-[project.dependencies]
-tqdm = "^4.74.0"
-numpy = ">=1.23.5"
-hydra-core = "<1.2"
 
 [project.scripts]
 run = "retexture.master.main"
