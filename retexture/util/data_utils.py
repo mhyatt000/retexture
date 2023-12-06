@@ -43,8 +43,8 @@ class RetextureDataset(Dataset):
     @classmethod
     def _get_contents(self, name):
         if osp.isdir(name):
-            files = osp.listddir(name)
-            return {f,self._get_contents(f) for f in files}
+            files = os.listdir(name)
+            return {f:self._get_contents(osp.join(name, f)) for f in files}
         else:
             return name
 

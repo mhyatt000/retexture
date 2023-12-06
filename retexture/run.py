@@ -8,12 +8,10 @@ from concurrent.futures import ProcessPoolExecutor
 from omegaconf import OmegaConf
 from tqdm import tqdm
 
-ROOT = osp.dirname(__file__)
-
+ROOT = osp.dirname(osp.dirname(__file__))
 config_path = osp.join(ROOT, "configs", "base.json")
 cfg = OmegaConf.load(config_path)
 print(cfg)
-
 
 def load_data(cfg):
     """loads file paths for models and textures"""
