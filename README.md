@@ -6,14 +6,14 @@ using blender to augment 3d model textures
 ## Installation
 
 1. clone the repo (more instructions later)
-2. `pip install -r requirements.txt`
+2. `pip install -e .`
 
 ### Installing blender
 
 * MacOS: `brew install blender`
 * Unix: `apt-get install blender`
 
-### Install via script
+### Install Blender via script
 
 see `./install.sh`
 
@@ -25,36 +25,21 @@ place all models in `datasets/models` and place textures in `datasets/textures` 
 datasets
 ├── models
 │   ├── bird1.dae
-│   ├── bird_duck.dae
-│   ├── bird_duck2.dae
-│   ├── bird_eagle.dae
-│   ├── bird_raven.dae
-│   ├── butterfly.dae
 │   ├── butterfly1.dae
 │   ...
 ├── datasets/textures
-│   ├── _fish_bass
-│   │   ├── Sketchy_Lines_Wavy_45_A.jpg
-│   │   ├── __Chalk_1.jpg
-│   │   ├── __Sketchy_Scales_1.jpg
-│   │   ├── __Wavy_Lines_45deg_A_1.jpg
-│   │   ├── material_1.jpg
-│   │   ├── material_2.jpg
-│   │   ├── material_3.jpg
-│   │   └── material_5.jpg
-│   ├── bird_duck
-│   │   └── mallard_male1.jpg
-│   ├── bird_duck2
-│   │   └── Color_000.JPG
+│   ├── bird1.dae
+│   ├── butterfly1.dae
 │   ...
 ```
 
+## Config Setup
+
+see `configs/base_config.yaml`
+
 ## Run
 
-`./run.sh`
-
-TODO:
-* `./run.sh <config>`
+`python -m retexture run`
 
 ## NOTES
 
