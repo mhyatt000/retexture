@@ -30,4 +30,4 @@ dependencies = [
 Homepage = "https://github.com/mhyatt000/retexture"
 
 [project.scripts]
-run = "retexture.master.main"
+run = "retexture.run:main"

@@ -1,7 +1,7 @@
 # retexture
 using blender to augment 3d model textures
 
-<img src="assets/teaser.png" alt="" width="400"/>
+<img src="assets/teaser.png" alt="" width="100%"/>
 
 ## Installation
 
