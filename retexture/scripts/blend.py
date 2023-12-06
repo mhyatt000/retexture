@@ -16,7 +16,6 @@ from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
 
 ROOT = osp.dirname(osp.dirname(__file__))
-CONFIGS = osp.join(ROOT, "configs")
 
 
 def get_args():

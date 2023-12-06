@@ -13,9 +13,9 @@ setup(
         'hydra-core',
     ],
     entry_points={
-        'console_scripts': [
-            'retexture = retexture.main:_main',
-        ],
+        # 'console_scripts': [
+            # 'retexture = retexture.main:_main',
+        # ],
     },
     classifiers=[],
 )

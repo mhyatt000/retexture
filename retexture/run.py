@@ -55,7 +55,8 @@ def render(pair):
 
     model, texture = pair
     quiet = " > /dev/null 2>&1"
-    blend = f"blender -b -P ~/cs/retexture/retexture/main.py -- {cfg2cmd(cfg)}"
+    blend_script = osp.join(ROOT, 'scripts','blend.py')
+    blend = f"blender -b -P {blend_script} -- {cfg2cmd(cfg)}"
     model_args = " " + cfg2cmd({"model": model, "texture": texture})
     os.system(blend + model_args + quiet)
 
