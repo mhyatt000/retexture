@@ -5,7 +5,7 @@ using blender to augment 3d model textures
 
 ## Installation
 
-1. clone the repo (more instructions later)
+1. clone the repo `git clone "https://github.com/mhyatt000/retexture"`
 2. `pip install -e .`
 
 ### Installing blender
