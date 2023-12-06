@@ -1,16 +1,7 @@
 # retexture
 using blender to augment 3d model textures
 
-<table>
-  <tr>
-    <td><img src="assets/output1.gif" alt="" width="400"/></td>
-    <td><img src="assets/output2.gif" alt="" width="400"/></td>
-  </tr>
-  <tr>
-    <td><img src="assets/output3.gif" alt="" width="400"/></td>
-    <td><img src="assets/output4.gif" alt="" width="400"/></td>
-  </tr>
-</table>
+<img src="assets/teaser.png" alt="" width="400"/>
 
 ## Installation
 

@@ -17,12 +17,12 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 dependencies = [
-    "tqdm >=4.74.0",
+    "tqdm >=4.61.2",
     "numpy >=1.23.5",
-    "hydra-core <1.2"
+    "hydra-core >=1.3"
 ]
 
 
