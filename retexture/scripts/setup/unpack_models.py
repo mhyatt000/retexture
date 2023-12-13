@@ -5,10 +5,11 @@ import os
 import os.path as osp
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Process the --path argument.")
-    parser.add_argument('--path', type=str, help='Path to the input directory')
+    parser = argparse.ArgumentParser(description="Unpacker of gdrive zips")
+    parser.add_argument('--path', type=str, help='Path to the input zip')
     parser.add_argument('--out', type=str, help='Path to the output directory')
-    
+    parser.add_argument('--models', action='store_true', help='If unpacking models')
+    parser.add_argument('--textures', action='store_true', help='If unpacking textures')
 
     args = parser.parse_args()
     return args
@@ -75,10 +76,34 @@ def remove_folders_in_path(clean_path):
         if os.path.isdir(item_path):
             shutil.rmtree(item_path)
 
+def models(args):
+
+    unzip_file(args.path, args.out)
+
+    head = osp.join(args.out,'Models')
+    mklist = lambda x : [osp.join(x,c) for c in os.listdir(x) if c != '.DS_Store']
+
+    categories = mklist(head)
+    subs = sum([mklist(c) for c in categories],[])
+    daes = [osp.join(x,f'{x.split("/")[-1]}.dae') for x in subs]
+
+    for d in daes:
+        os.system(f'mv "{d}" {args.out}')
+    os.system(f'rm -r {head}')
+
+
 def main():
     
     args = parse_args()
-    
+
+    if args.models:
+        models(args) 
+    if args.textures:
+        textures(args) 
+
+    quit()
+
+    """
     list_fullpath = lambda parent: [osp.join(parent,x) for x in os.listdir(parent)]
     categories = list_fullpath(args.path)
 
@@ -96,6 +121,8 @@ def main():
         dae2basename(outdir)
 
     remove_folders_in_path(args.out)
+    """
+
 
 if __name__ == "__main__":
     main()
