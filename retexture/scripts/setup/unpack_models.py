@@ -92,6 +92,21 @@ def models(args):
     os.system(f'rm -r {head}')
 
 
+def textures(args):
+
+    unzip_file(args.path, args.out)
+
+    head = osp.join(args.out,'Textures')
+    mklist = lambda x : [osp.join(x,c) for c in os.listdir(x) if c != '.DS_Store']
+
+    categories = mklist(head)
+    jpgs = sum([[osp.join(x,f'{j.split("/")[-1]}') for j in os.listdir(x)] for x in categories],[])
+
+    for j in jpgs:
+        os.system(f'mv "{j}" {args.out}')
+    os.system(f'rm -r {head}')
+
+
 def main():
     
     args = parse_args()
