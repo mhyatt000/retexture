@@ -11,7 +11,6 @@ from tqdm import tqdm
 ROOT = osp.dirname(osp.dirname(__file__))
 config_path = osp.join(ROOT, "configs", "base.json")
 cfg = OmegaConf.load(config_path)
-print(cfg)
 
 def load_data(cfg):
     """loads file paths for models and textures"""
@@ -70,6 +69,8 @@ def pair_complete(pair):
 
 
 def main():
+
+    print(cfg)
 
     # shell commands
     quiet = " > /dev/null 2>&1"
