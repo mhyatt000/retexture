@@ -32,7 +32,7 @@ def get_args():
     parser.add_argument("--out_dir", help="Output directory")
     parser.add_argument("--nangles", type=int, help="Number of angles")
     parser.add_argument("--file_type", help="Type of the rendered images")
-    parser.add_argument("--silent", action="store_true", help="Run in silent mode")
+    parser.add_argument("--quiet", action="store_true", help="Run in quiet mode")
 
     parser.add_argument("--model", help="Directory for data")
     parser.add_argument("--texture", help="Directory for data")
