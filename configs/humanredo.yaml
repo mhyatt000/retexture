@@ -1,0 +1,9 @@
+data_dir: datasets
+out_dir: outputs
+nangles: 12
+file_type: png
+quiet: true
+pairs:
+  - ["fish2","phone3"]
+  - ["fish8","phone6"]
+  - ["bear7","fish3"]
