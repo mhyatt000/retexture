@@ -12,7 +12,7 @@ ROOT = osp.dirname(osp.dirname(__file__))
 
 base_config = osp.join(ROOT, "configs", "base.yaml")
 other = osp.join(ROOT, "configs", "humanredo.yaml")
-cfg = OmegaConf.load(other)
+cfg = OmegaConf.load(base_config)
 
 
 def load_data(cfg):
@@ -72,7 +72,7 @@ def render(pair):
     """renders a model & texture pair"""
 
     model, texture = pair
-    quiet = "> /dev/null 2>&1" if cfg.quiet else ""
+    quiet = " > /dev/null 2>&1" if cfg.quiet else ""
     blend_script = osp.join(ROOT, "retexture", "scripts", "blend.py")
     blend = f"blender -b -P {blend_script} -- {cfg2cmd(cfg)}"
     model_args = " " + cfg2cmd({"model": model, "texture": texture})
