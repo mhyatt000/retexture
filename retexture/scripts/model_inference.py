@@ -1,4 +1,7 @@
 import argparse
+from tqdm import tqdm
+import torch.nn.functional as F
+import pandas as pd
 import os
 import os.path as osp
 from collections import Counter
@@ -15,36 +18,13 @@ from torch.utils.data import DataLoader, Dataset
 
 from retexture.utils.data_utils import RetextureDataset as RTD
 
-"""
-NOTES
-top5 acc
-
-how much did it give to shape? and to texture?
-we care more about biological categories
-- hard to find specific 3d models
-
-TODO
-1. find a way to consolidate / expand categories for 1-1 mapping
-2. find top5
-3. ask did any model or textures or NONE get classified?
-    4. if NONE, compare probability of texture and object
-
-WARNINGS:
-- tested ≈ 10 images ... 2 or less had models or textues in top5 
-- reviewers might wonder if the model is confused because of texture or because of distribution shift from rendering
-    - solution... ?
-        - control for the effect of rendering images
-        - by rendering black texture "shillouette"
-"""
-
-
 def get_args():
     parser = argparse.ArgumentParser(description="Parse command line arguments.")
     parser.add_argument(
         "--model_name", type=str, help="Specify the model name as a string."
     )
     parser.add_argument(
-        "--root_data", type=str, help="Specify the root data directory as a string."
+        "--root_data", type=str, help="Specify the root data directory as a string.", 
     )
 
     return parser.parse_args()
@@ -85,20 +65,33 @@ def get_model(model_name):
         )
 
 
+
 class Analyzer:
-    def __init__(self, dataset: RTD):
-        self.srcs = None
-        self.tgts = None
+    def __init__(self, dataset):
+        self.df = None  
         self.dataset = dataset
-        self.tops = {}
 
-    def _concat_tensor(self, buffer, tensor):
-        """Private helper method to concatenate tensors."""
-        return tensor if buffer is None else torch.cat((buffer, tensor), dim=0)
+    def remember(self, gt, out, path):
+        """
+        gt is groud truth
+        out is the output of the model
+        """
+        out = out.numpy().tolist()  
+        data = {'path': path, 'gt': int(gt)}
+        data.update({f'out{i}': out[i] for i in range(len(out))})
+        
+        new_row = pd.DataFrame([data])
+        
+        if self.df is None:
+            self.df = new_row
+        else:
+            self.df = pd.concat([self.df, new_row], ignore_index=True)
+       
+    def show(self):
+        print(self.df)
 
-    def remember(self, src, tgt):
-        self.srcs = self._concat_tensor(self.srcs, src)
-        self.tgts = self._concat_tensor(self.tgts, tgt)
+    def to_csv(self, path):
+        self.df.to_csv(path, index=False)
 
     def process(self):
         if self.srcs is None or self.tgts is None:
@@ -148,17 +141,8 @@ class Analyzer:
                 pass
 
 
-def evaluate(model, dataloader):
+def evaluate(model, dataloader, args):
     """Evaluate a model on a dataset and print logits to the command line.
-
-    1. get the model
-    2. get the data
-      2a. we need a data loader that decides / abstracts away how we get the data
-    3. train on the data ... this is done since we are using pretrained models
-    4. evaluate the model on some data
-
-    model is neural network which is a mathematical function
-    output = f(input)
 
     Args:
         model (torch.nn.Module): The pre-trained model to evaluate.
@@ -166,34 +150,28 @@ def evaluate(model, dataloader):
     """
 
     A = Analyzer(dataloader.dataset)
-    i = 0
+    import time
 
     model.eval()
     with torch.no_grad():
-        for images, labels in dataloader:
-            logits = model(images)
-            A.remember(src=logits, tgt=labels)
+        for batch  in tqdm(dataloader, total=args.batches):
+            logits = model(batch['image'])
+            for out, gt, path in zip(logits, batch['label'], batch['path']):
+                A.remember(gt, F.softmax(out, dim=0), path)
 
-            print("Logits:", logits)
-            print(logits.shape)
-            print("Label:", labels)
-
-            i += 1
-            if i == 2:
-                A.process()
-                A.visualize()
-                quit()
-
+    A.show()
+    A.to_csv(f'{args.model_name}.csv')
 
 def main():
     args = get_args()
     model = get_model(args.model_name)
 
     blender_dataset = RTD(root_dir=args.root_data)
-    batch_size = 64
+    batch_size = 1
+    args.batches = len(blender_dataset) // batch_size
     dataloader = DataLoader(blender_dataset, batch_size=batch_size, shuffle=True)
 
-    evaluate(model, dataloader)
+    evaluate(model, dataloader, args=args)
 
 
 if __name__ == "__main__":

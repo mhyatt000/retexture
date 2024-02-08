@@ -20,6 +20,7 @@ default_transform = transforms.Compose(
     ]
 )
 
+
 class RetextureDataset(Dataset):
     def __init__(self, root_dir, transform=default_transform):
         """Custom PyTorch dataset for ReTexture.
@@ -47,12 +48,11 @@ class RetextureDataset(Dataset):
         self.traverse_files()
         self.mk_imagenet_map()
 
-
     @classmethod
     def _get_contents(self, name):
         if osp.isdir(name):
             files = os.listdir(name)
-            return {f:self._get_contents(osp.join(name, f)) for f in files}
+            return {f: self._get_contents(osp.join(name, f)) for f in files}
         else:
             return name
 
@@ -60,7 +60,7 @@ class RetextureDataset(Dataset):
         return self._get_contents(self.root_dir)
 
     def traverse_files(self):
-        """ deprecated in favor of get_dataset """
+        """deprecated in favor of get_dataset"""
 
         for class_name in self.classes:
             class_dir = osp.join(self.root_dir, class_name)
@@ -99,6 +99,7 @@ class RetextureDataset(Dataset):
         image = Image.open(img_path).convert("RGB")
         image = self.transform(image) if self.transform else image
 
-        label = F.one_hot(torch.tensor(label), num_classes=len(self.classes)).float()
+        # not doing one-hot because of csv file...
+        # label = F.one_hot(torch.tensor(label), num_classes=len(self.classes)).float()
 
-        return image, label
+        return {"image": image, "label": label, "path": img_path}
