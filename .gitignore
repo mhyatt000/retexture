@@ -1,4 +1,5 @@
 # config files... hydra tends to generate them
+*.csv
 *.yaml
 *.json
 *.gif
