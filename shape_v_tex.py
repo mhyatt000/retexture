@@ -5,27 +5,27 @@ import requests
 import seaborn as sns
 from matplotlib.colors import LogNorm
 
-categories = {
-    # "Non-Biological": {
-    "Helmet": [518, 560, 570],
-    "Mailbox": [637],
-    "Bathtub": [435, 876],
-    "Mug": [504],
-    "Phone": [487, 528, 707],
-    # "Biological": {
-    "Fish": [1, 5, 147, 390, 391, 392, 393, 394, 395, 396, 397],
-    "Elephant": [385, 386],
-    "Butterfly": [322, 323, 324, 326],
-    "Bird": [12, 13, 14, 15, 16, 17, 18, 19, 20],
-    "Bear": [105, 294, 295, 296, 297, 387, 388],
-}
-
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 
 
 class CSVAnalyzer:
     def __init__(self, file_path):
+        self.categories = {
+            # "Non-Biological": {
+            "helmet": [518, 560, 570],
+            "mailbox": [637],
+            "bathtub": [435, 876],
+            "mug": [504],
+            "phone": [487, 528, 707],
+            # "Biological": {
+            "fish": [1, 5, 147, 390, 391, 392, 393, 394, 395, 396, 397],
+            "elephant": [385, 386],
+            "butterfly": [322, 323, 324, 326],
+            "bird": [12, 13, 14, 15, 16, 17, 18, 19, 20],
+            "bear": [105, 294, 295, 296, 297, 387, 388],
+        }
+
         self.df = pd.read_csv(file_path)
         self.mk_imagenet_map()
 
@@ -45,7 +45,7 @@ class CSVAnalyzer:
 
         self.df = self.df[self.df["texture"] != "black"]
 
-        for category, cols in categories.items():
+        for category, cols in self.categories.items():
             cols = [f"out{i}" for i in cols]
             self.df[category.lower() + "_max"] = self.df[cols].max(axis=1)
 
@@ -56,12 +56,64 @@ class CSVAnalyzer:
             lambda x: x[f"{x['texture']}_max"], axis=1
         )
 
-        print(self.df["shape_prob"].mean())
-        print(self.df["shape_prob"].sum())
-        print()
-        print(self.df["texture_prob"].mean())
-        print(self.df["texture_prob"].sum())
+        self.df["relevant_categories"] = self.df[
+            [c for c in self.df.columns if "_max" in c]
+        ].sum(axis=1)
 
+        self.df["other_prob"] = (
+            self.df["relevant_categories"]
+            - self.df["shape_prob"]
+            + self.df["texture_prob"]
+        )
+        self.df["vote"] = self.df.apply(
+            lambda x: "other"
+            if x["other_prob"] > x["shape_prob"] and x["other_prob"] > x["texture_prob"]
+            else ("shape" if x["shape_prob"] > x["texture_prob"] else "texture"),
+            axis=1,
+        )
+
+    def plt_stacked_bar(self):
+        fig, axs = plt.subplots(2, 1)
+
+        for ax, X in zip(axs, ["shape", "texture"]):
+            votes = {
+                k: {x: len(ssf["vote"]) for x, ssf in sf.groupby(X)}
+                for k, sf in self.df.groupby("vote")
+            }
+
+            if "texture" not in votes:
+                votes["texture"] = {k: 0 for k in votes["shape"].keys()}
+
+            print(votes)
+
+            def bar(label, bottom=None):
+                x, y = votes[label].keys(), votes[label].values()
+                ax.bar(list(x), list(y), label=label, bottom=list(bottom))
+
+            bar(label="other")
+            bar(bottom=votes["other"].values(), label="shape")
+            bar(bottom=votes["shape"].values(), label="texture")
+
+            ax.legend(loc="lower left")
+            ax.set(
+                title=f"Vote Distribution by {X.upper()} Ground Truth",
+                xlabel=f"{X.upper()} Ground Truth",
+                ylabel="(n) images",
+            )
+
+        plt.tight_layout()
+        plt.show()
+
+    def plt_votes(self):
+        votes = {
+            k: sum([v == k for v in self.df["vote"]])
+            for k in ["other", "shape", "texture"]
+        }
+        plt.bar(votes.keys(), votes.values())
+        plt.title(f"Vote Distribution | {votes}")
+        plt.show()
+
+    def plt_violin(self):
         shape_probs, texture_probs = (
             self.df["shape_prob"].tolist(),
             self.df["texture_prob"].tolist(),
@@ -135,5 +187,4 @@ class CSVAnalyzer:
 path = "resnet.csv"
 # path = "res_small.csv"
 A = CSVAnalyzer(path)
-A.process_data()
-A.plot()
+A.plt_stacked_bar()
